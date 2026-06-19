@@ -338,3 +338,305 @@ pub extern "C" fn cmln_capture_destroy(cap: *mut CmlnCapture) {
     // Give it enough time for libusb to fully release the device.
     std::thread::sleep(std::time::Duration::from_millis(300));
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Parameter functions — set/get/supported params
+// ═══════════════════════════════════════════════════════════════════
+
+#[no_mangle]
+pub extern "C" fn cmln_param_set_int(cam: *mut CmlnCamera, name: *const c_char, value: i64) -> c_int {
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.set_value(&mut ctx, value) {
+            Ok(()) => CMLN_OK,
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_set_float(cam: *mut CmlnCamera, name: *const c_char, value: f64) -> c_int {
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_float(&ctx) {
+        Some(n) => match n.set_value(&mut ctx, value) {
+            Ok(()) => CMLN_OK,
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_set_bool(cam: *mut CmlnCamera, name: *const c_char, value: c_int) -> c_int {
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_boolean(&ctx) {
+        Some(n) => match n.set_value(&mut ctx, value != 0) {
+            Ok(()) => CMLN_OK,
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_set_string(cam: *mut CmlnCamera, name: *const c_char, val: *const c_char) -> c_int {
+    if name.is_null() || val.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let val = match unsafe { std::ffi::CStr::from_ptr(val) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.set_value(&mut ctx, val.parse::<i64>().unwrap_or(0)) {
+            Ok(()) => CMLN_OK,
+            Err(_) => CMLN_ERR,
+        },
+        None => match node.as_string(&ctx) {
+            Some(n) => match n.set_value(&mut ctx, val) {
+                Ok(()) => CMLN_OK,
+                Err(_) => CMLN_ERR,
+            },
+            None => CMLN_ERR,
+        },
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_set_enum(cam: *mut CmlnCamera, name: *const c_char, sym: *const c_char) -> c_int {
+    if name.is_null() || sym.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let sym = match unsafe { std::ffi::CStr::from_ptr(sym) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_enumeration(&ctx) {
+        Some(n) => match n.set_entry_by_symbolic(&mut ctx, &sym) {
+            Ok(()) => CMLN_OK,
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_get_int(cam: *mut CmlnCamera, name: *const c_char, out: *mut i64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.value(&mut ctx) {
+            Ok(v) => { unsafe { *out = v; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_get_float(cam: *mut CmlnCamera, name: *const c_char, out: *mut f64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_float(&ctx) {
+        Some(n) => match n.value(&mut ctx) {
+            Ok(v) => { unsafe { *out = v; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_get_bool(cam: *mut CmlnCamera, name: *const c_char, out: *mut c_int) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_boolean(&ctx) {
+        Some(n) => match n.value(&mut ctx) {
+            Ok(v) => { unsafe { *out = if v { 1 } else { 0 }; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_get_enum(cam: *mut CmlnCamera, name: *const c_char,
+                                       buf: *mut c_char, buf_len: usize) -> c_int {
+    if cam.is_null() || name.is_null() || buf_len == 0 { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    let entry = match node.as_enumeration(&ctx) {
+        Some(n) => match n.current_entry(&mut ctx) {
+            Ok(e) => e,
+            Err(_) => return CMLN_ERR,
+        },
+        None => return CMLN_ERR,
+    };
+    let sym = entry.symbolic(&ctx);
+    copy_cstr(sym, buf, buf_len);
+    CMLN_OK
+}
+
+#[no_mangle]
+pub extern "C" fn cmln_param_get_supported(
+    cam: *mut CmlnCamera,
+    out_names: *mut *const c_char,
+    capacity: usize,
+    out_count: *mut u32,
+) -> c_int {
+    if cam.is_null() || out_count.is_null() { return CMLN_ERR_NULL_HANDLE; }
+
+    let cam_ref = match unsafe { (*cam).inner.as_mut() } {
+        Some(i) => match i.camera.as_mut() {
+            Some(c) => c,
+            None => { unsafe { *out_count = 0; } return CMLN_ERR_NULL_HANDLE; }
+        },
+        None => { unsafe { *out_count = 0; } return CMLN_ERR; }
+    };
+
+    let ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => { unsafe { *out_count = 0; } return CMLN_ERR; }
+    };
+
+    let candidates = [
+        "ExposureTime", "ExposureTimeAbs", "ExposureTimeAuto",
+        "Gain", "GainAuto", "GainRaw",
+        "Gamma", "GammaAbs", "GammaAuto",
+        "Brightness", "OffsetX", "OffsetY",
+        "Width", "Height", "WidthMax", "HeightMax",
+        "PixelFormat",
+        "TriggerMode", "TriggerSource", "TriggerActivation",
+        "TriggerSoftware", "BalanceRatio", "BalanceRatioAuto",
+        "AutoWhiteBalance", "Shutter", "PulseWidth", "PulseDelay",
+        "AcquisitionMode", "AcquisitionFrameRate", "AcquisitionFrameRateEnable",
+        "LineSelector", "LineMode", "LineInv",
+        "UserOutputSelector", "UserOutputValue",
+        "ColorFilter",
+    ];
+
+    let mut names: Vec<&'static str> = Vec::new();
+    for c in &candidates {
+        if ctx.node(*c).is_some() {
+            names.push(*c);
+        }
+    }
+
+    let count = names.len() as u32;
+    unsafe { *out_count = count; }
+
+    if !out_names.is_null() && capacity >= names.len() {
+        for (i, &name) in names.iter().enumerate() {
+            unsafe { *out_names.add(i) = name.as_ptr() as *const c_char; }
+        }
+    }
+
+    count as c_int
+}
+

@@ -159,10 +159,47 @@ void cmln_capture_free_frame(CmlnCapture *cap);
 void cmln_capture_stop(CmlnCapture *cap);
 
 /*
- * Destroy the capture handle (stops capture if running, joins thread,
- * frees the camera handle). This is the recommended cleanup function.
- */
-void cmln_capture_destroy(CmlnCapture *cap);
+  * Destroy the capture handle (stops capture if running, joins thread,
+  * frees the camera handle). This is the recommended cleanup function.
+  */
+ void cmln_capture_destroy(CmlnCapture *cap);
+
+
+ /* ── Parameter access ───────────────────────────────────────── */
+
+ /*
+  * Set and get camera parameters (names follow GenICam naming convention).
+  * Must be called after cmln_camera_load_context() and before cmln_capture_start().
+  *
+  * Parameter names: "Gain", "ExposureTime", "TriggerMode", etc.
+  */
+
+ /* Set operations — returns CMLN_OK on success */
+ int cmln_param_set_int(CmlnCamera *cam, const char *name, int64_t value);
+ int cmln_param_set_float(CmlnCamera *cam, const char *name, double value);
+ int cmln_param_set_bool(CmlnCamera *cam, const char *name, int value);
+ int cmln_param_set_string(CmlnCamera *cam, const char *name, const char *value);
+ int cmln_param_set_enum(CmlnCamera *cam, const char *name, const char *symbolic);
+
+ /* Get operations — writes result via out pointer, returns CMLN_OK on success */
+ int cmln_param_get_int(CmlnCamera *cam, const char *name, int64_t *out);
+ int cmln_param_get_float(CmlnCamera *cam, const char *name, double *out);
+ int cmln_param_get_bool(CmlnCamera *cam, const char *name, int *out);
+
+ /* Get enum value as symbolic name — max CMLN_MAX_STRING_LEN bytes */
+ int cmln_param_get_enum(CmlnCamera *cam, const char *name, char *buf, size_t buf_len);
+
+ /*
+  * Get list of supported parameter names.
+  * Returns count of supported params.
+  * If out_names != NULL and capacity >= count, fills array of C string pointers.
+  * Strings are static — caller must NOT free them.
+  */
+ int cmln_param_get_supported(CmlnCamera *cam,
+                               const char **out_names,
+                               size_t capacity,
+                               uint32_t *out_count);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
