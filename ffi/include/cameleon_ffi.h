@@ -195,10 +195,37 @@ void cmln_capture_stop(CmlnCapture *cap);
   * If out_names != NULL and capacity >= count, fills array of C string pointers.
   * Strings are static — caller must NOT free them.
   */
- int cmln_param_get_supported(CmlnCamera *cam,
-                               const char **out_names,
-                               size_t capacity,
-                               uint32_t *out_count);
+  int cmln_param_get_supported(CmlnCamera *cam,
+                                const char **out_names,
+                                size_t capacity,
+                                uint32_t *out_count);
+
+  /*
+   * Parameter bounds — for supportedParams descriptor population.
+   * Returns CMLN_OK on success, writes result via out pointer.
+   */
+  int cmln_param_get_int_min(CmlnCamera *cam, const char *name, int64_t *out);
+  int cmln_param_get_int_max(CmlnCamera *cam, const char *name, int64_t *out);
+  int cmln_param_get_int_increment(CmlnCamera *cam, const char *name, int64_t *out);
+  int cmln_param_get_float_min(CmlnCamera *cam, const char *name, double *out);
+  int cmln_param_get_float_max(CmlnCamera *cam, const char *name, double *out);
+
+  /*
+   * Parameter metadata — for node type resolution and profile diagnostics.
+   */
+  int cmln_param_get_type(CmlnCamera *cam, const char *name, int32_t *out_type);
+  int cmln_param_is_readable(CmlnCamera *cam, const char *name, int *out);
+  int cmln_param_is_writable(CmlnCamera *cam, const char *name, int *out);
+
+  /*
+   * Enumeration entry names.
+   * Returns count of enumeration entries on success.
+   * If buf != NULL and buf_len > 0, fills with NUL-terminated symbolic names.
+   * If out_required_size != NULL, sets total bytes needed (including trailing NUL).
+   */
+  int cmln_param_get_enum_entries(CmlnCamera *cam, const char *name,
+                                   char *buf, size_t buf_len,
+                                   size_t *out_required_size);
 
 
 #ifdef __cplusplus

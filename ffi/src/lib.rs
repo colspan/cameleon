@@ -640,3 +640,286 @@ pub extern "C" fn cmln_param_get_supported(
     count as c_int
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Parameter bounds and metadata (for supportedParams / profile diagnostics)
+// ═══════════════════════════════════════════════════════════════════
+
+/// Get the minimum value of an integer parameter.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_int_min(cam: *mut CmlnCamera, name: *const c_char, out: *mut i64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.min(&mut ctx) {
+            Ok(v) => { unsafe { *out = v; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+/// Get the maximum value of an integer parameter.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_int_max(cam: *mut CmlnCamera, name: *const c_char, out: *mut i64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.max(&mut ctx) {
+            Ok(v) => { unsafe { *out = v; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+/// Get the minimum value of a float parameter.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_float_min(cam: *mut CmlnCamera, name: *const c_char, out: *mut f64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_float(&ctx) {
+        Some(n) => match n.min(&mut ctx) {
+            Ok(v) => { unsafe { *out = v; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+/// Get the maximum value of a float parameter.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_float_max(cam: *mut CmlnCamera, name: *const c_char, out: *mut f64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_float(&ctx) {
+        Some(n) => match n.max(&mut ctx) {
+            Ok(v) => { unsafe { *out = v; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+/// Get increment value of an integer parameter.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_int_increment(cam: *mut CmlnCamera, name: *const c_char, out: *mut i64) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.inc(&mut ctx) {
+            Ok(Some(v)) => { unsafe { *out = v; } CMLN_OK }
+            Ok(None) => { unsafe { *out = 1; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => CMLN_ERR,
+    }
+}
+
+/// Get the symbolic names of all enumeration entries.
+/// Returns the number of entries. If buf is non-NULL, fills it with
+/// NUL-terminated symbolic names separated by NUL characters.
+/// If out_required_size is non-NULL, sets the total buffer size needed.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_enum_entries(
+    cam: *mut CmlnCamera, name: *const c_char,
+    buf: *mut c_char, buf_len: usize,
+    out_required_size: *mut usize,
+) -> c_int {
+    if cam.is_null() || name.is_null() || buf_len == 0 { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let ctx = if let Ok(c) = cam_ref.params_ctxt() { c } else { return CMLN_ERR };
+    let node = if let Some(n) = ctx.node(&name) { n } else { return CMLN_ERR_NULL_HANDLE };
+
+    let entries = match node.as_enumeration(&ctx) {
+        Some(n) => n.entries(&ctx),
+        None => return CMLN_ERR,
+    };
+
+    // Build a NUL-separated list of symbolic names
+    let mut parts: Vec<String> = Vec::new();
+    for entry in &entries {
+        parts.push(entry.symbolic(&ctx).to_string());
+    }
+    let content = parts.join("\0");
+    let required = content.len() + 1; // trailing NUL
+
+    if !out_required_size.is_null() {
+        unsafe { *out_required_size = required; }
+        if buf_len == 0 { return entries.len() as c_int; }
+    }
+
+    if required > buf_len {
+        return entries.len() as c_int; // return count even if buffer too small
+    }
+
+    unsafe {
+        std::ptr::copy_nonoverlapping(content.as_ptr(), buf as *mut u8, content.len());
+    }
+
+    entries.len() as c_int
+}
+
+/// Get the type of a parameter node (0=Integer, 1=Float, 2=Boolean, 3=String, 4=Enum, 5=Command).
+/// Returns -1 if the node does not exist or context is not loaded.
+#[no_mangle]
+pub extern "C" fn cmln_param_get_type(
+    cam: *mut CmlnCamera, name: *const c_char,
+    out_type: *mut i32,
+) -> c_int {
+    if cam.is_null() || name.is_null() || out_type.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let ctx = if let Ok(c) = cam_ref.params_ctxt() { c } else { return CMLN_ERR };
+    let node = if let Some(n) = ctx.node(&name) { n } else { return CMLN_ERR_NULL_HANDLE };
+
+    // Determine type by trying each cast
+    let t = if node.as_integer(&ctx).is_some() { 0 }
+         else if node.as_float(&ctx).is_some() { 1 }
+         else if node.as_boolean(&ctx).is_some() { 2 }
+         else if node.as_string(&ctx).is_some() { 3 }
+         else if node.as_enumeration(&ctx).is_some() { 4 }
+         else { return CMLN_ERR_NULL_HANDLE };
+
+    unsafe { *out_type = t; }
+    CMLN_OK
+}
+
+/// Get whether a parameter is readable.
+#[no_mangle]
+pub extern "C" fn cmln_param_is_readable(
+    cam: *mut CmlnCamera, name: *const c_char,
+    out: *mut c_int,
+) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    // Try integer first (most common)
+    match node.as_integer(&ctx) {
+        Some(n) => match n.is_readable(&mut ctx) {
+            Ok(v) => { unsafe { *out = if v { 1 } else { 0 }; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => match node.as_float(&ctx) {
+            Some(n) => match n.is_readable(&mut ctx) {
+                Ok(v) => { unsafe { *out = if v { 1 } else { 0 }; } CMLN_OK }
+                Err(_) => CMLN_ERR,
+            },
+            None => CMLN_ERR_NULL_HANDLE,
+        },
+    }
+}
+
+/// Get whether a parameter is writable.
+#[no_mangle]
+pub extern "C" fn cmln_param_is_writable(
+    cam: *mut CmlnCamera, name: *const c_char,
+    out: *mut c_int,
+) -> c_int {
+    if cam.is_null() || name.is_null() || out.is_null() { return CMLN_ERR_NULL_HANDLE; }
+    let name = match unsafe { std::ffi::CStr::from_ptr(name) }.to_str() {
+        Ok(s) => s.to_string(),
+        Err(_) => return CMLN_ERR_NULL_HANDLE,
+    };
+    let cam_ref = unsafe { (*cam).inner.as_mut().unwrap() }.camera.as_mut().unwrap();
+    let mut ctx = match cam_ref.params_ctxt() {
+        Ok(c) => c,
+        Err(_) => return CMLN_ERR,
+    };
+    let node = match ctx.node(&name) {
+        Some(n) => n,
+        None => return CMLN_ERR_NULL_HANDLE,
+    };
+    match node.as_integer(&ctx) {
+        Some(n) => match n.is_writable(&mut ctx) {
+            Ok(v) => { unsafe { *out = if v { 1 } else { 0 }; } CMLN_OK }
+            Err(_) => CMLN_ERR,
+        },
+        None => match node.as_float(&ctx) {
+            Some(n) => match n.is_writable(&mut ctx) {
+                Ok(v) => { unsafe { *out = if v { 1 } else { 0 }; } CMLN_OK }
+                Err(_) => CMLN_ERR,
+            },
+            None => CMLN_ERR_NULL_HANDLE,
+        },
+    }
+}
+
+
