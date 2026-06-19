@@ -1,0 +1,12 @@
+[package]
+name = "cameleon-ffi"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+thiserror = "2.0.18"
+rusb = "0.9.0"
+cameleon = { path = "../cameleon", features = ["libusb"] }
+
+[lib]
+crate-type = ["cdylib", "rlib"]

@@ -1,5 +1,5 @@
 [workspace]
-members = ["device", "cameleon", "gentl", "genapi", "impl"]
+members = ["device", "cameleon", "gentl", "genapi", "impl", "ffi"]
 
 [workspace.metadata.release]
 # Use single tag for all crates (config for `cargo release`):
